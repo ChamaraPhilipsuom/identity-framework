@@ -168,6 +168,9 @@ public class ApplicationDAOImpl implements ApplicationDAO {
                 prepStmt.addBatch();
             }
             prepStmt.executeBatch();
+            if (!dbConnection.getAutoCommit()) {
+                dbConnection.commit();
+            }
 
         } finally {
             IdentityApplicationManagementUtil.closeStatement(prepStmt);
@@ -203,6 +206,9 @@ public class ApplicationDAOImpl implements ApplicationDAO {
                 prepStmt.addBatch();
             }
             prepStmt.executeBatch();
+            if (!dbConnection.getAutoCommit()) {
+                dbConnection.commit();
+            }
 
         } finally {
             IdentityApplicationManagementUtil.closeStatement(prepStmt);

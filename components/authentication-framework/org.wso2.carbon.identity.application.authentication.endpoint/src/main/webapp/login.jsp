@@ -26,6 +26,7 @@
 <%@ page import="java.util.List" %>
 <%@ page import="org.wso2.carbon.identity.application.authentication.endpoint.util.TenantDataManager" %>
 <%@ page import="java.util.ResourceBundle" %>
+<%@ page import="org.wso2.carbon.identity.core.util.IdentityCoreConstants" %>
 
 <%!
     private static final String FIDO_AUTHENTICATOR = "FIDOAuthenticator";
@@ -47,6 +48,10 @@
         }
 
         String errorMessage = "Authentication Failed! Please Retry";
+        String errorCode = "";
+        if(request.getParameter(Constants.ERROR_CODE)!=null){
+            errorCode = request.getParameter(Constants.ERROR_CODE) ;
+        }
         String loginFailed = "false";
 
         if (Boolean.parseBoolean(request.getParameter(Constants.AUTH_FAILURE))) {
@@ -71,9 +76,9 @@
 
     %>
     <%
-        boolean reCpatchaEnabled = false;
+        boolean reCaptchaEnabled = false;
         if (request.getParameter("reCaptcha") != null && "TRUE".equalsIgnoreCase(request.getParameter("reCaptcha"))) {
-            reCpatchaEnabled = true;
+            reCaptchaEnabled = true;
         }
     %>
     <html>
@@ -93,7 +98,7 @@
         <![endif]-->
 
         <%
-            if (reCpatchaEnabled) {
+            if (reCaptchaEnabled) {
         %>
         <script src='<%=
         (request.getParameter("reCaptchaAPI"))%>'></script>
@@ -195,9 +200,9 @@
                                 <% if (isHubIdp) { %>
                                 <div>
                                 <a href="#" data-toggle="popover" data-placement="bottom"
-                                   title="Sign in with <%=Encode.forHtmlContent(idpName)%>" id="popover" id="icon-<%=iconId%>">
+                                   title="Sign in with <%=Encode.forHtmlAttribute(idpName)%>" id="popover" id="icon-<%=iconId%>">
                                     <img class="idp-image" src="images/login-icon.png"
-                                         title="Sign in with <%=Encode.forHtmlContent(idpName)%>"/>
+                                         title="Sign in with <%=Encode.forHtmlAttribute(idpName)%>"/>
 
                                     <div id="popover-head" class="hide">
                                         <label class="font-large">Sign in with <%=Encode.forHtmlContent(idpName)%></label>
@@ -223,7 +228,7 @@
                                         '<%=Encode.forJavaScriptAttribute(Encode.forUriComponent(idpEntry.getValue()))%>')"
                                    href="#" id="icon-<%=iconId%>">
                                     <img class="idp-image" src="images/login-icon.png" data-toggle="tooltip"
-                                         data-placement="top" title="Sign in with <%=Encode.forHtmlContent(idpName)%>"/>
+                                         data-placement="top" title="Sign in with <%=Encode.forHtmlAttribute(idpName)%>"/>
                                 </a>
                                 <label for="icon-<%=iconId%>"><%=Encode.forHtmlContent(idpName)%></label>
                                     </div>
@@ -307,7 +312,7 @@
             });
 
             <%
-            if(reCpatchaEnabled) {
+            if(reCaptchaEnabled) {
             %>
             var error_msg = $("#error-msg");
             $("#loginForm").submit(function (e) {

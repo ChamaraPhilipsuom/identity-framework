@@ -29,7 +29,10 @@
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.List" %>
 <%@ page import="org.apache.commons.lang.StringUtils" %>
-<%@ page import="org.wso2.carbon.identity.mgt.endpoint.serviceclient.beans.UserClaim" %>
+<%@ page import="org.wso2.carbon.identity.mgt.endpoint.serviceclient.UserRegistrationClient" %>
+<%@ page import="org.wso2.carbon.identity.mgt.endpoint.serviceclient.beans.ConfirmSelfRegistrationRequest" %>
+<%@ page import="org.wso2.carbon.identity.mgt.endpoint.serviceclient.beans.User" %>
+<%@ page import="javax.ws.rs.core.Response" %>
 
 <%
     UserInformationRecoveryClient userInformationRecoveryClient = new UserInformationRecoveryClient();
@@ -43,6 +46,7 @@
     // Common parameters for password recovery with email and self registration with email
     String username = request.getParameter("username");
     String confirmationKey = request.getParameter("confirmationKey");
+
 
     // Password recovery parameters
     String recoveryOption = request.getParameter("recoveryOption");
@@ -58,24 +62,7 @@
 
     VerificationBean verificationBean = null;
 
-    if (isUserRegistrationEmailConfirmation) {
-        // Self Registration Account Confirmation Scenario
-        verificationBean = userInformationRecoveryClient.confirmUserSelfRegistration(username, confirmationKey,
-                captchaInfoBean, MultitenantUtils.getTenantDomain(username));
-
-        if (verificationBean != null && verificationBean.getVerified()) {
-            request.getRequestDispatcher("challenge-question-add.jsp").forward(request, response);
-        } else {
-            request.setAttribute("username", username);
-            request.setAttribute("confirmationKey", confirmationKey);
-            request.setAttribute("error", true);
-            request.setAttribute("errorMsg",
-                    IdentityManagementEndpointUtil.getPrintableError("Invalid information provided.",
-                            "Either the user not found or captcha answer is incorrect.",
-                            verificationBean));
-            request.getRequestDispatcher("confirmregistration.do").forward(request, response);
-        }
-    } else if (isUsernameRecovery) {
+   if (isUsernameRecovery) {
         // Username Recovery Scenario
         UserIdentityClaimDTO[] claimDTOs = userInformationRecoveryClient.getUserIdentitySupportedClaims(
                 IdentityManagementEndpointConstants.WSO2_DIALECT);

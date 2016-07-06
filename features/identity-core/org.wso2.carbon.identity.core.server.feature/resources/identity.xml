@@ -246,6 +246,12 @@
         </SAML2Grant>
         <OpenIDConnect>
             <IDTokenBuilder>org.wso2.carbon.identity.openidconnect.DefaultIDTokenBuilder</IDTokenBuilder>
+
+            <!-- Comment out to add Audience values to the JWT token (id_token)  -->
+            <!--Audiences>
+                   <Audience>${carbon.protocol}://${carbon.host}:${carbon.management.port}/oauth2/token</Audience>
+            </Audiences -->
+
             <!--
                 Default value for IDTokenIssuerID, is OAuth2TokenEPUrl.
                 If that doesn't satisfy uncomment the following config and explicitly configure the value
@@ -305,6 +311,7 @@
         <UseAuthenticatedUserDomainCrypto>false</UseAuthenticatedUserDomainCrypto>
         <SAMLDefaultSigningAlgorithmURI>http://www.w3.org/2000/09/xmldsig#rsa-sha1</SAMLDefaultSigningAlgorithmURI>
         <SAMLDefaultDigestAlgorithmURI>http://www.w3.org/2000/09/xmldsig#sha1</SAMLDefaultDigestAlgorithmURI>
+        <SLOHostNameVerificationEnabled>true</SLOHostNameVerificationEnabled>
     </SSOService>
 
     <SecurityTokenService>
@@ -364,23 +371,27 @@
     </SCIM>
 
     <Recovery>
-        <notification>
-            <password>
-                <enable>true</enable>
-            </password>
-            <username>
-                <enable>true</enable>
-            </username>
-            <internallyManage>true</internallyManage>
-        </notification>
-        <question>
-            <password>
-                <enable>true</enable>
-                <separator>!</separator>
-                <minAnswers>2</minAnswers>
-            </password>
-        </question>
-        <expiryTime>3</expiryTime>
+        <Notification>
+            <Password>
+                <Enable>true</Enable>
+            </Password>
+            <Username>
+                <Enable>true</Enable>
+            </Username>
+            <InternallyManage>true</InternallyManage>
+        </Notification>
+        <Question>
+            <Password>
+                <Enable>true</Enable>
+                <Separator>!</Separator>
+                <MinAnswers>2</MinAnswers>
+                <ReCaptcha>
+                    <Enable>false</Enable>
+                    <MaxFailedAttempts>3</MaxFailedAttempts>
+                </ReCaptcha>
+            </Password>
+        </Question>
+        <ExpiryTime>3</ExpiryTime>
     </Recovery>
 
     <SelfRegistration>
@@ -389,6 +400,7 @@
         <Notification>
             <InternallyManage>true</InternallyManage>
         </Notification>
+        <ReCaptcha>false</ReCaptcha>
     </SelfRegistration>
 
     <!--SessionContextCache>
@@ -405,15 +417,19 @@
                        orderId="50" enable="false"/>
         <EventListener type="org.wso2.carbon.user.core.listener.UserOperationEventListener" name="org.wso2.carbon.identity.scim.common.listener.SCIMUserOperationListener"
                        orderId="90" enable="true"/>
-        <EventListener type="org.wso2.carbon.user.core.listener.UserOperationEventListener" name="org.wso2.carbon.identity.governance.listener.IdentityMgtEventListener"
-                       orderId="95" enable="false"/>
         <EventListener type="org.wso2.carbon.user.core.listener.UserOperationEventListener" name="org.wso2.carbon.identity.governance.listener.IdentityStoreEventListener"
-                       orderId="100" enable="false">
+                       orderId="20" enable="true">
         <Property name="Data.Store">org.wso2.carbon.identity.governance.store.UserStoreBasedIdentityDataStore</Property>
         </EventListener>
         <EventListener type="org.wso2.carbon.identity.core.handler.AbstractIdentityMessageHandler"
-                       name="org.wso2.carbon.identity.data.publisher.application.authentication.impl.DASAuthnDataPublisherImpl"
+                       name="org.wso2.carbon.identity.data.publisher.application.authentication.impl.DASLoginDataPublisherImpl"
                        orderId="10" enable="false"/>
+        <EventListener type="org.wso2.carbon.identity.core.handler.AbstractIdentityMessageHandler"
+                       name="org.wso2.carbon.identity.data.publisher.application.authentication.impl.DASSessionDataPublisherImpl"
+                       orderId="11" enable="false"/>
+        <EventListener type="org.wso2.carbon.identity.core.handler.AbstractIdentityMessageHandler"
+                       name="org.wso2.carbon.identity.data.publisher.application.authentication.AuthnDataPublishHandlerManager"
+                       orderId="11" enable="false"/>
     </EventListeners>
 
     <CacheConfig>

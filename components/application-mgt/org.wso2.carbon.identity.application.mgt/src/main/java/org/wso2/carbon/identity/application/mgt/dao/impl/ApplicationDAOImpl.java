@@ -272,10 +272,6 @@ public class ApplicationDAOImpl implements ApplicationDAO {
 
             results = storeAppPrepStmt.getGeneratedKeys();
 
-            if (!connection.getAutoCommit()) {
-                connection.commit();
-            }
-
             int applicationId = 0;
             if (results.next()) {
                 applicationId = results.getInt(1);
@@ -293,6 +289,9 @@ public class ApplicationDAOImpl implements ApplicationDAO {
                         Arrays.asList(serviceProvider.getSpProperties()), tenantID);
             }
 
+            if (!connection.getAutoCommit()) {
+                connection.commit();
+            }
             if (log.isDebugEnabled()) {
                 log.debug("Application Stored successfully with application id " + applicationId);
             }
@@ -1599,8 +1598,8 @@ public class ApplicationDAOImpl implements ApplicationDAO {
                                     break;
                                 }
                             }
+                            inbountAuthRequest.setFriendlyName(customAuthenticator.getFriendlyName());
                         }
-                        inbountAuthRequest.setFriendlyName(customAuthenticator.getFriendlyName());
 
                         if (!customAuthenticatorsAlreadyIn.containsKey(authType)) {
                             customAuthenticatorsAlreadyIn.put(authType, new ArrayList<String>());

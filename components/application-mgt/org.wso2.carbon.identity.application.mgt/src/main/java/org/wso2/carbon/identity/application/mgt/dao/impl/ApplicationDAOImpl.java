@@ -103,7 +103,6 @@ public class ApplicationDAOImpl implements ApplicationDAO {
         standardInboundAuthTypes = new ArrayList<String>();
         standardInboundAuthTypes.add("oauth2");
         standardInboundAuthTypes.add("wstrust");
-        standardInboundAuthTypes.add("samlsso");
         standardInboundAuthTypes.add("openid");
         standardInboundAuthTypes.add("passivests");
     }
@@ -1543,13 +1542,19 @@ public class ApplicationDAOImpl implements ApplicationDAO {
         if (log.isDebugEnabled()) {
             log.debug("Reading Clients of Application " + applicationId);
         }
-
+        String wellKnownApplicationType = ApplicationConstants.CUSTOM_APP;
         PreparedStatement getClientInfo = null;
         ResultSet resultSet = null;
         Map<String, List<String>> customAuthenticatorsAlreadyIn = new HashMap<String, List<String>>();
 
         try {
-
+            List<ServiceProviderProperty> spProperties = getServicePropertiesBySpId(connection,applicationId);
+            for(ServiceProviderProperty spProp : spProperties){
+                if(StringUtils.equals(spProp.getName(), ApplicationConstants.WELLKNOWN_APPLICATION_TYPE)){
+                    wellKnownApplicationType = spProp.getValue();
+                    break;
+                }
+            }
             // INBOUND_AUTH_KEY, INBOUND_AUTH_TYPE, PROP_NAME, PROP_VALUE
             getClientInfo = connection
                     .prepareStatement(ApplicationMgtDBQueries.LOAD_CLIENTS_INFO_BY_APP_ID);
@@ -1589,7 +1594,7 @@ public class ApplicationDAOImpl implements ApplicationDAO {
 
                     if (isCustomAuthenticator) {
                         AbstractInboundAuthenticatorConfig customAuthenticator = ApplicationManagementServiceComponentHolder
-                                .getInboundAuthenticatorConfig(authType);
+                                .getInboundAuthenticatorConfig(wellKnownApplicationType);
                         if (customAuthenticator != null) {
                             Property[] confProps = customAuthenticator.getConfigurationProperties();
                             for (Property confProp : confProps) {
@@ -1610,8 +1615,8 @@ public class ApplicationDAOImpl implements ApplicationDAO {
                         propNamesIn.add(propName);
                     }
 
-                    inbountAuthRequest.setProperties((ApplicationMgtUtil.concatArrays(
-                            new Property[]{prop}, inbountAuthRequest.getProperties())));
+                    inbountAuthRequest.setProperties((ApplicationMgtUtil.concatArrays(new Property[]{prop},
+                            inbountAuthRequest.getProperties())));
                 }
 
                 if (log.isDebugEnabled()) {
@@ -1625,33 +1630,36 @@ public class ApplicationDAOImpl implements ApplicationDAO {
             IdentityApplicationManagementUtil.closeResultSet(resultSet);
         }
 
-        Map<String, AbstractInboundAuthenticatorConfig> allCustomAuthenticators = ApplicationManagementServiceComponentHolder
-                .getAllInboundAuthenticatorConfig();
+        Map<String, AbstractInboundAuthenticatorConfig> allCustomAuthenticators =
+                ApplicationManagementServiceComponentHolder.getAllInboundAuthenticatorConfig();
 
         Iterator<Entry<String, AbstractInboundAuthenticatorConfig>> it = allCustomAuthenticators.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<String, AbstractInboundAuthenticatorConfig> entry = it.next();
+            if (StringUtils.equals(entry.getKey(), wellKnownApplicationType)) {
+                if (!customAuthenticatorsAlreadyIn.containsKey(entry.getValue().getName())) {
+                    InboundAuthenticationRequestConfig inbountAuthRequest = new InboundAuthenticationRequestConfig();
+                    inbountAuthRequest.setInboundAuthKey(entry.getValue().getAuthKey());
+                    inbountAuthRequest.setInboundAuthType(entry.getValue().getName());
+                    inbountAuthRequest.setFriendlyName(entry.getValue().getFriendlyName());
+                    inbountAuthRequest.setProperties(entry.getValue().getConfigurationProperties());
+                    authRequestMap.put(entry.getValue().getName() + ":" + entry.getValue().getAuthKey(),
+                            inbountAuthRequest);
+                    customAuthenticatorsAlreadyIn.put(entry.getValue().getName(), new ArrayList<String>());
+                } else {
+                    InboundAuthenticationRequestConfig inbountAuthRequest = authRequestMap.get(entry.getValue()
+                            .getName() + ":" + entry.getValue().getAuthKey());
+                    List<String> propsAlreadyIn = customAuthenticatorsAlreadyIn.get(entry.getValue().getName());
+                    for (Property prop : entry.getValue().getConfigurationProperties()) {
+                        if (!propsAlreadyIn.contains(prop.getName())) {
+                            inbountAuthRequest.setProperties(ApplicationMgtUtil.concatArrays(new Property[]{prop},
+                                    inbountAuthRequest.getProperties()));
 
-            if (!customAuthenticatorsAlreadyIn.containsKey(entry.getKey())) {
-                InboundAuthenticationRequestConfig inbountAuthRequest = new InboundAuthenticationRequestConfig();
-                inbountAuthRequest.setInboundAuthKey(entry.getValue().getAuthKey());
-                inbountAuthRequest.setInboundAuthType(entry.getValue().getName());
-                inbountAuthRequest.setFriendlyName(entry.getValue().getFriendlyName());
-                inbountAuthRequest.setProperties(entry.getValue().getConfigurationProperties());
-                authRequestMap.put(entry.getValue().getName() + ":" + entry.getValue().getAuthKey(), inbountAuthRequest);
-            } else {
-                InboundAuthenticationRequestConfig inbountAuthRequest = authRequestMap.get(entry.getValue().getName()
-                        + ":" + entry.getValue().getAuthKey());
-                List<String> propsAlreadyIn = customAuthenticatorsAlreadyIn.get(entry.getKey());
-                for (Property prop : entry.getValue().getConfigurationProperties()) {
-                    if (!propsAlreadyIn.contains(prop.getName())) {
-                        inbountAuthRequest.setProperties(ApplicationMgtUtil.concatArrays(new Property[] { prop },
-                                inbountAuthRequest.getProperties()));
-
+                        }
                     }
                 }
-            }
 
+            }
         }
 
         InboundAuthenticationConfig inboundAuthenticationConfig = new InboundAuthenticationConfig();

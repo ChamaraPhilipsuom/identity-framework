@@ -793,7 +793,7 @@ public class IdentityUtil {
         StringBuilder queryString = new StringBuilder("?");
         boolean isFirst = true;
         for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
-            for (String paramValue : entry.getValue()) {
+            for(String paramValue : entry.getValue()) {
                 if (isFirst) {
                     isFirst = false;
                 } else {
@@ -801,7 +801,8 @@ public class IdentityUtil {
                 }
                 queryString.append(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8.name()));
                 queryString.append("=");
-                queryString.append(URLEncoder.encode(paramValue, StandardCharsets.UTF_8.name()));
+                queryString.append(StringUtils.isNotBlank(paramValue) ? URLEncoder.encode(paramValue,
+                        StandardCharsets.UTF_8.name()) : "");
 
             }
         }
